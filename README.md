@@ -162,13 +162,15 @@ src/
 
 Add application screenshots here as the interface evolves.
 
-| Dashboard | Transactions |
-|---|---|
-| Add dashboard screenshot | Add transactions screenshot |
+### Dashboard 
+![PesaTrack Dashboard](public/screenshots/dash.png)
 
-| Budget Management | Dark Mode |
-|---|---|
-| Add budgets screenshot | Add dark mode screenshot |
+### Transactions
+![PesaTrack Dashboard](public/screenshots/transactions.png)
+
+### Budget Management
+![PesaTrack Dashboard](public/screenshots/budgets.png)
+
 
 ## Security
 
