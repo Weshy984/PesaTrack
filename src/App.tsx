@@ -22,6 +22,15 @@ import type { Budget } from "./types/budget";
 import { getBudgets } from "./services/budgetService";
 import Budgets from "./pages/Budgets";
 import { calculateBudgetSummaries } from "./utils/budgetCalculations";
+import type { RecurringExpense } from "./types/recurringExpense";
+
+import {
+  getRecurringExpenses,
+  updateRecurringExpenseStatus,
+  deleteRecurringExpense,
+} from "./services/recurringExpenseService";
+
+import RecurringExpenses from "./pages/RecurringExpenses";
 
 type MobileIconName = "home" | "activity" | "budget" | "profile" | "plus";
 
@@ -68,6 +77,15 @@ function App() {
     String(today.getMonth() + 1).padStart(2, "0"),
   ].join("-");
   });
+
+  const [recurringExpenses, setRecurringExpenses] =
+    useState<RecurringExpense[]>([]);
+
+  const [recurringExpensesLoading, setRecurringExpensesLoading] =
+    useState(true);
+
+  const [recurringExpensesError, setRecurringExpensesError] =
+    useState("");
 
   const navigate = useNavigate();
 
@@ -124,6 +142,24 @@ function App() {
   }
 };
 
+const fetchRecurringExpenses = async () => {
+  setRecurringExpensesLoading(true);
+  setRecurringExpensesError("");
+
+  try {
+    const data = await getRecurringExpenses();
+    setRecurringExpenses(data);
+  } catch (error) {
+    setRecurringExpensesError(
+      error instanceof Error
+        ? error.message
+        : "Failed to load recurring expenses."
+    );
+  } finally {
+    setRecurringExpensesLoading(false);
+  }
+};
+
   const expenseCategories = Array.from(
   new Set(
     transactions
@@ -155,7 +191,8 @@ function App() {
       if (session) {
         await Promise.all([
           fetchTransactions(), 
-          fetchBudgets(selectedBudgetMonth)
+          fetchBudgets(selectedBudgetMonth),
+          fetchRecurringExpenses()
         ]);
       } else {
         setBudgets([]);
@@ -178,6 +215,7 @@ function App() {
       if (event === "SIGNED_IN" && session) {
         void fetchTransactions();
         void fetchBudgets(selectedBudgetMonth);
+        void fetchRecurringExpenses();
       }
 
       if (event === "SIGNED_OUT") {
@@ -188,6 +226,7 @@ function App() {
         setTransactionsError("");
         setTransactionsLoading(false);
         setEditingTransaction(null);
+        setRecurringExpensesLoading(false);
         setUserFirstName("there");
         navigate("/login", { replace: true });
       }
@@ -235,6 +274,46 @@ function App() {
     setIsTransactionModalOpen(false);
 
   };
+
+  const handleToggleRecurringExpense = async (
+    expense: RecurringExpense
+      ) => {
+        try {
+          await updateRecurringExpenseStatus(
+            expense.id,
+            !expense.is_active
+        );
+
+        await fetchRecurringExpenses();
+      } catch (error) {
+        window.alert(
+          error instanceof Error
+            ? error.message
+            : "Failed to update recurring expense."
+        );
+      }
+    };
+
+const handleDeleteRecurringExpense = async (
+  expenseId: string
+  ) => {
+    const confirmed = window.confirm(
+     "Are you sure you want to delete this recurring expense?"
+    );
+
+    if (!confirmed) return;
+
+  try {
+    await deleteRecurringExpense(expenseId);
+    await fetchRecurringExpenses();
+  } catch (error) {
+    window.alert(
+      error instanceof Error
+        ? error.message
+        : "Failed to delete recurring expense."
+    );
+  }
+};
 
   if (checkingSession) {
     return (
@@ -356,6 +435,22 @@ return (
           />
         }
       />
+      <Route
+        path="/recurring-expenses"
+        element={
+          <RecurringExpenses
+            recurringExpenses={recurringExpenses}
+            loading={recurringExpensesLoading}
+            errorMessage={recurringExpensesError}
+            categories={expenseCategories}
+            onExpenseCreated={() => {
+           void fetchRecurringExpenses();
+          }}
+        onToggleStatus={handleToggleRecurringExpense}
+        onDelete={handleDeleteRecurringExpense}
+      />
+      }
+    />
 
       <Route
         path="*"
