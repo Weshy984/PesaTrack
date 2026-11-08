@@ -1,4 +1,5 @@
 import type { BudgetSummary } from "../utils/budgetCalculations";
+import BudgetAlerts from "./BudgetAlerts";
 
 type BudgetCardProps = {
   summary: BudgetSummary;
@@ -85,6 +86,8 @@ function BudgetCard({ summary, onEdit, onDelete }: BudgetCardProps) {
           style={{ width: `${displayedPercentage}%` }}
         />
       </div>
+
+      <BudgetAlerts summary={summary} />
 
       <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
         <span className="text-sm text-[#6a7c7b] dark:text-slate-300">

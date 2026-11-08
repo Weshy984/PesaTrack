@@ -21,6 +21,7 @@ import "./App.css";
 import type { Budget } from "./types/budget";
 import { getBudgets } from "./services/budgetService";
 import Budgets from "./pages/Budgets";
+import { calculateBudgetSummaries } from "./utils/budgetCalculations";
 
 type MobileIconName = "home" | "activity" | "budget" | "profile" | "plus";
 
@@ -215,6 +216,9 @@ function App() {
     .reduce((total, transaction) => total + Number(transaction.amount), 0);
 
   const monthlyBalance = monthlyIncome - monthlyExpenses;
+  const budgetAlertCount = calculateBudgetSummaries(budgets, transactions).filter(
+    (summary) => summary.percentageUsed >= 80
+  ).length;
 
   const handleEditTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction);
@@ -387,7 +391,14 @@ return (
         <MobileIcon name="plus" />
       </button>
       <NavLink to="/budgets" className="mobile-nav-item">
-        <span className="mobile-nav-icon"><MobileIcon name="budget" /></span>
+        <span className="mobile-nav-icon mobile-nav-icon-badged">
+          <MobileIcon name="budget" />
+          {budgetAlertCount > 0 && (
+            <span className="mobile-nav-badge" aria-label={`${budgetAlertCount} budget alerts`}>
+              {budgetAlertCount > 99 ? "99+" : budgetAlertCount}
+            </span>
+          )}
+        </span>
         <span>Budgets</span>
       </NavLink>
       <button

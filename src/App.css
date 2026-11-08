@@ -109,6 +109,23 @@
   .mobile-nav-item:focus-visible,
   .mobile-nav-item[aria-current="page"] { color: #13795b; }
   .mobile-nav-icon { display: grid; place-items: center; width: 26px; height: 26px; }
+  .mobile-nav-icon-badged { position: relative; }
+  .mobile-nav-badge {
+    position: absolute;
+    top: -7px;
+    right: -9px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border: 2px solid white;
+    border-radius: 999px;
+    background: #dc2626;
+    color: white;
+    font-size: .58rem;
+    font-weight: 800;
+    line-height: 13px;
+    text-align: center;
+  }
   .mobile-nav-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
   .mobile-nav-button { font-family: inherit; }
   .mobile-add-button {
