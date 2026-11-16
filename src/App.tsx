@@ -32,15 +32,19 @@ import {
 
 import RecurringExpenses from "./pages/RecurringExpenses";
 
-type MobileIconName = "home" | "activity" | "budget" | "profile" | "plus";
-
+type MobileIconName =
+  | "home"
+  | "activity"
+  | "budget"
+  | "repeat"
+  | "plus";
 function MobileIcon({ name }: { name: MobileIconName }) {
   const paths = {
     home: "M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-10.5ZM9 22v-6h6v6",
     activity: "M4 19V5m0 14h16M8 16l3-4 3 2 5-7",
     budget: "M4 7h16v13H4zM7 4h10v3H7zM8 11h8M8 15h5",
-    profile: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0",
     plus: "M12 5v14M5 12h14",
+    repeat: "M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4m14-1v2a3 3 0 0 1-3 3H3",
   } as const;
 
   return (
@@ -68,6 +72,30 @@ function App() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [budgetsLoading, setBudgetsLoading] = useState(true);
   const [budgetsError, setBudgetsError] = useState("");
+  const [recurringExpenses, setRecurringExpenses] =
+    useState<RecurringExpense[]>([]);
+  const [recurringExpensesLoading, setRecurringExpensesLoading] =
+    useState(true);
+  const [recurringExpensesError, setRecurringExpensesError] =
+    useState("");
+
+  const fetchRecurringExpenses = async () => {
+    setRecurringExpensesLoading(true);
+    setRecurringExpensesError("");
+
+    try {
+      const data = await getRecurringExpenses();
+    setRecurringExpenses(data);
+    } catch (error) {
+      setRecurringExpensesError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load recurring expenses."
+      );
+      } finally {
+        setRecurringExpensesLoading(false);
+      }
+    };
 
   const [selectedBudgetMonth, setSelectedBudgetMonth] = useState(() => {
   const today = new Date();
@@ -77,15 +105,6 @@ function App() {
     String(today.getMonth() + 1).padStart(2, "0"),
   ].join("-");
   });
-
-  const [recurringExpenses, setRecurringExpenses] =
-    useState<RecurringExpense[]>([]);
-
-  const [recurringExpensesLoading, setRecurringExpensesLoading] =
-    useState(true);
-
-  const [recurringExpensesError, setRecurringExpensesError] =
-    useState("");
 
   const navigate = useNavigate();
 
@@ -142,24 +161,6 @@ function App() {
   }
 };
 
-const fetchRecurringExpenses = async () => {
-  setRecurringExpensesLoading(true);
-  setRecurringExpensesError("");
-
-  try {
-    const data = await getRecurringExpenses();
-    setRecurringExpenses(data);
-  } catch (error) {
-    setRecurringExpensesError(
-      error instanceof Error
-        ? error.message
-        : "Failed to load recurring expenses."
-    );
-  } finally {
-    setRecurringExpensesLoading(false);
-  }
-};
-
   const expenseCategories = Array.from(
   new Set(
     transactions
@@ -192,7 +193,7 @@ const fetchRecurringExpenses = async () => {
         await Promise.all([
           fetchTransactions(), 
           fetchBudgets(selectedBudgetMonth),
-          fetchRecurringExpenses()
+          fetchRecurringExpenses(),
         ]);
       } else {
         setBudgets([]);
@@ -215,7 +216,7 @@ const fetchRecurringExpenses = async () => {
       if (event === "SIGNED_IN" && session) {
         void fetchTransactions();
         void fetchBudgets(selectedBudgetMonth);
-        void fetchRecurringExpenses();
+        void fetchBudgets(selectedBudgetMonth);
       }
 
       if (event === "SIGNED_OUT") {
@@ -226,8 +227,8 @@ const fetchRecurringExpenses = async () => {
         setTransactionsError("");
         setTransactionsLoading(false);
         setEditingTransaction(null);
-        setRecurringExpensesLoading(false);
         setUserFirstName("there");
+        setRecurringExpensesLoading(false);
         navigate("/login", { replace: true });
       }
     });
@@ -275,45 +276,50 @@ const fetchRecurringExpenses = async () => {
 
   };
 
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error("Sign-out failed:", error.message);
+  };
+
   const handleToggleRecurringExpense = async (
     expense: RecurringExpense
-      ) => {
-        try {
-          await updateRecurringExpenseStatus(
-            expense.id,
-            !expense.is_active
+    ) => {
+      try {
+        await updateRecurringExpenseStatus(
+          expense.id,
+          !expense.is_active
         );
 
-        await fetchRecurringExpenses();
-      } catch (error) {
+      await fetchRecurringExpenses();
+     } catch (error) {
         window.alert(
           error instanceof Error
-            ? error.message
-            : "Failed to update recurring expense."
+          ? error.message
+          : "Failed to update recurring expense."
         );
       }
     };
 
-const handleDeleteRecurringExpense = async (
-  expenseId: string
-  ) => {
-    const confirmed = window.confirm(
-     "Are you sure you want to delete this recurring expense?"
-    );
+    const handleDeleteRecurringExpense = async (
+      expenseId: string
+      ) => {
+        const confirmed = window.confirm(
+          "Are you sure you want to delete this recurring expense?"
+        );
 
-    if (!confirmed) return;
+        if (!confirmed) return;
 
-  try {
-    await deleteRecurringExpense(expenseId);
-    await fetchRecurringExpenses();
-  } catch (error) {
-    window.alert(
-      error instanceof Error
-        ? error.message
-        : "Failed to delete recurring expense."
-    );
-  }
-};
+        try {
+          await deleteRecurringExpense(expenseId);
+          await fetchRecurringExpenses();
+          } catch (error) {
+            window.alert(
+              error instanceof Error
+              ? error.message
+              : "Failed to delete recurring expense."
+            );
+          }
+        };
 
   if (checkingSession) {
     return (
@@ -359,16 +365,17 @@ return (
       >
         <span>▤</span> Budgets
       </Link>
+      <Link
+        to="/recurring-expenses"
+        className="nav-link"
+      >
+        <span>⟳</span> Recurring Expenses
+      </Link>
     </nav>
     <div className="sidebar-footer">
       <button 
       type="button" 
-      onClick={async () => { 
-        const { error } = 
-        await supabase.auth.signOut(); 
-        if (error) 
-          console.error("Sign-out failed:", error.message); 
-      }} 
+      onClick={handleSignOut}
       className="nav-link" 
       style={{ width: "100%", border: 0, background: "transparent" }}>
         ↪ 
@@ -392,6 +399,7 @@ return (
               monthlyExpenses={monthlyExpenses}
               monthlyBalance={monthlyBalance}
               monthlyTransactionCount={monthlyTransactionCount}
+              onSignOut={handleSignOut}
               onAddTransaction={() => {
                 setEditingTransaction(null);
                 setIsTransactionModalOpen(true);
@@ -435,6 +443,7 @@ return (
           />
         }
       />
+
       <Route
         path="/recurring-expenses"
         element={
@@ -444,13 +453,13 @@ return (
             errorMessage={recurringExpensesError}
             categories={expenseCategories}
             onExpenseCreated={() => {
-           void fetchRecurringExpenses();
-          }}
-        onToggleStatus={handleToggleRecurringExpense}
-        onDelete={handleDeleteRecurringExpense}
+              void fetchRecurringExpenses();
+            }}
+            onToggleStatus={handleToggleRecurringExpense}
+            onDelete={handleDeleteRecurringExpense}
+          />
+        }
       />
-      }
-    />
 
       <Route
         path="*"
@@ -496,17 +505,12 @@ return (
         </span>
         <span>Budgets</span>
       </NavLink>
-      <button
-        type="button"
-        className="mobile-nav-item mobile-nav-button"
-        onClick={async () => {
-          const { error } = await supabase.auth.signOut();
-          if (error) console.error("Sign-out failed:", error.message);
-        }}
-      >
-        <span className="mobile-nav-icon"><MobileIcon name="profile" /></span>
-        <span>Profile</span>
-      </button>
+      <NavLink to="/recurring-expenses" className="mobile-nav-item">
+        <span className="mobile-nav-icon">
+          <MobileIcon name="repeat" />
+        </span>
+        <span>Recurring</span>
+      </NavLink>
     </nav>
   </main>
 );

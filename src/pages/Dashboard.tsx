@@ -7,6 +7,7 @@ type DashboardProps = {
   monthlyExpenses: number;
   monthlyBalance: number;
   monthlyTransactionCount: number;
+  onSignOut: () => void;
   onAddTransaction: () => void;
 };
 
@@ -16,6 +17,7 @@ function Dashboard({
   monthlyExpenses,
   monthlyBalance,
   monthlyTransactionCount,
+  onSignOut,
   onAddTransaction,
 }: DashboardProps) {
   return (
@@ -23,7 +25,20 @@ function Dashboard({
       <div className="dashboard-heading mb-8">
         <div>
           <p className="eyebrow">Overview</p>
-          <h1 className="page-title">Good morning, {userFirstName}.</h1>
+          <div className="dashboard-title-row">
+            <button
+              type="button"
+              className="dashboard-profile-button"
+              aria-label="Sign out"
+              title="Sign out"
+              onClick={onSignOut}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0" />
+              </svg>
+            </button>
+            <h1 className="page-title">Good morning, {userFirstName}.</h1>
+          </div>
           <p className="page-subtitle">Here is your financial pulse for this month.</p>
         </div>
         <button type="button" onClick={onAddTransaction} className="primary-button desktop-add-button">
