@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { generateDueRecurringExpenses } from "../services/recurringExpenseService";
 import RecurringExpenseForm from "../components/RecurringExpenseForm";
 import type { RecurringExpense } from "../types/recurringExpense";
 
@@ -20,6 +22,31 @@ function RecurringExpenses({
   onToggleStatus,
   onDelete,
 }: RecurringExpensesProps) {
+  const [generating, setGenerating] = useState(false);
+const [generationMessage, setGenerationMessage] = useState("");
+
+async function handleGenerateDueExpenses() {
+  setGenerating(true);
+  setGenerationMessage("");
+
+  try {
+    const count = await generateDueRecurringExpenses();
+
+    setGenerationMessage(
+      `${count} recurring transaction(s) generated successfully.`
+    );
+
+    onExpenseCreated();
+  } catch (error) {
+    setGenerationMessage(
+      error instanceof Error
+        ? error.message
+        : "Could not generate recurring transactions."
+    );
+  } finally {
+    setGenerating(false);
+  }
+}
   return (
     <section className="page-content">
       <div className="mb-8">
@@ -33,6 +60,23 @@ function RecurringExpenses({
           Manage expenses that repeat every month.
         </p>
       </div>
+
+      <div className="mb-6">
+  <button
+    type="button"
+    onClick={handleGenerateDueExpenses}
+    disabled={generating}
+    className="rounded-lg bg-[#176b5b] px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    {generating ? "Generating..." : "Generate due expenses"}
+  </button>
+
+  {generationMessage && (
+    <p className="mt-3 text-sm text-[#176b5b] dark:text-emerald-300">
+      {generationMessage}
+    </p>
+  )}
+</div>
 
       <RecurringExpenseForm
         categories={categories}

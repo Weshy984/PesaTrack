@@ -95,3 +95,24 @@ export async function deleteRecurringExpense(
 
   if (error) throw error;
 }
+export async function generateDueRecurringExpenses(): Promise<number> {
+  const { data: userData, error: userError } =
+    await supabase.auth.getUser();
+
+  if (userError) throw userError;
+
+  console.log("Authenticated user:", userData.user?.id);
+
+  const { data, error } = await supabase.rpc(
+    "generate_due_recurring_expenses"
+  );
+
+  console.log("Recurring generation result:", data);
+  console.log("Recurring generation error:", error);
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? 0;
+}

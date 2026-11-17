@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Routes,
   Route,
@@ -28,6 +28,7 @@ import {
   getRecurringExpenses,
   updateRecurringExpenseStatus,
   deleteRecurringExpense,
+  generateDueRecurringExpenses,
 } from "./services/recurringExpenseService";
 
 import RecurringExpenses from "./pages/RecurringExpenses";
@@ -78,6 +79,7 @@ function App() {
     useState(true);
   const [recurringExpensesError, setRecurringExpensesError] =
     useState("");
+  const processedGenerationUsers = useRef(new Set<string>());
 
   const fetchRecurringExpenses = async () => {
     setRecurringExpensesLoading(true);
@@ -96,6 +98,31 @@ function App() {
         setRecurringExpensesLoading(false);
       }
     };
+
+  const generateAndRefreshRecurringExpenses = async (userId: string) => {
+  // Prevent duplicate calls during initial session loading and sign-in.
+  if (processedGenerationUsers.current.has(userId)) return;
+
+  processedGenerationUsers.current.add(userId);
+
+  try {
+    const generatedCount = await generateDueRecurringExpenses();
+
+    if (generatedCount > 0) {
+      console.info(
+        `${generatedCount} recurring transaction(s) generated.`
+      );
+    }
+  } catch (error) {
+    processedGenerationUsers.current.delete(userId);
+    console.error("Recurring expense generation failed:", error);
+  } finally {
+    await Promise.all([
+      fetchTransactions(),
+      fetchRecurringExpenses(),
+    ]);
+  }
+};
 
   const [selectedBudgetMonth, setSelectedBudgetMonth] = useState(() => {
   const today = new Date();
@@ -195,6 +222,7 @@ function App() {
           fetchBudgets(selectedBudgetMonth),
           fetchRecurringExpenses(),
         ]);
+         await generateAndRefreshRecurringExpenses(session.user.id);
       } else {
         setBudgets([]);
         setBudgetsLoading(false);
@@ -214,9 +242,10 @@ function App() {
       setUserFirstName(getFirstName(session?.user ?? null));
 
       if (event === "SIGNED_IN" && session) {
-        void fetchTransactions();
         void fetchBudgets(selectedBudgetMonth);
-        void fetchBudgets(selectedBudgetMonth);
+        window.setTimeout(() => {
+          void generateAndRefreshRecurringExpenses(session.user.id);
+        }, 0);
       }
 
       if (event === "SIGNED_OUT") {
@@ -229,6 +258,9 @@ function App() {
         setEditingTransaction(null);
         setUserFirstName("there");
         setRecurringExpensesLoading(false);
+        processedGenerationUsers.current.clear();
+        setRecurringExpenses([]);
+        setRecurringExpensesError("");
         navigate("/login", { replace: true });
       }
     });
